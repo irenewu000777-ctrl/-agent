@@ -1,0 +1,46 @@
+name: CNY/SGD Rate Monitor
+
+on:
+  schedule:
+    # 北京时间 CST = UTC+8，所有时间转换为 UTC
+    - cron: '0 0 * * *'   # 08:00 CST
+    - cron: '0 4 * * *'   # 12:00 CST
+    - cron: '0 8 * * *'   # 16:00 CST
+    - cron: '0 12 * * *'  # 20:00 CST
+  workflow_dispatch:        # 允许手动触发（用于测试）
+
+permissions:
+  contents: write           # 允许 push history.csv
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run rate monitor
+        env:
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+          EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
+        run: python src/main.py
+
+      - name: Commit updated history.csv
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/history.csv
+          git diff --cached --quiet || git commit -m "chore: update rate history $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push
