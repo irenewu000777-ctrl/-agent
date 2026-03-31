@@ -1,6 +1,9 @@
 name: CNY/SGD Rate Monitor
 
 on:
+  push:                      # 添加这行
+    branches:
+      - master               # 或你的主分支名
   schedule:
     # 北京时间 CST = UTC+8，所有时间转换为 UTC
     - cron: '0 0 * * *'   # 08:00 CST
